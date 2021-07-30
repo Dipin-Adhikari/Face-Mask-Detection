@@ -58,7 +58,7 @@ def face_detector(img):
     faces_location = face_recognition.face_locations(imgs)
     encode_faces = face_recognition.face_encodings(imgs, faces_location)
 
-    for face_location, encode_face in zip(faces_location, encode_faces):
+    for encode_face in faces_location, encode_faces:
         results = face_recognition.compare_faces(encode_lst, encode_face)
         distance = face_recognition.face_distance(encode_lst, encode_face)
 
