@@ -6,6 +6,7 @@ from passgmail import password
 import os
 import mediapipe as mp
 import face_recognition
+import time
 
 
 cap = cv2.VideoCapture(0)
@@ -15,8 +16,9 @@ np.set_printoptions(suppress=True)
 model = tf.models.load_model("Face Mask detector.h5")
 condition = "None"
 color = (255, 0, 0)
-p_name = ""
-
+p_name = []
+c_time, p_time = 0, 0 
+e_condition = True
 
 img_directory = "Images"
 lst = os.listdir(img_directory)
@@ -40,25 +42,32 @@ encode_lst = find_encodings(imgs)
 
 
 def send_email(email, name):
-    global p_name
-    if name != p_name:
+    global p_name, e_condition
+    for i in p_name:
+        if name != i:
+            e_condition = True
+        else:
+            e_condition = False
+            break
+    if e_condition:    
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login('adk.dipin@gmail.com', password)
         server.sendmail('adk.dipin@gmail.com',
                         email,
                         f'Hey {name} you need to wear a mask in public place.')
-        p_name = name
+        p_name.append(name)
+
 
 def face_detector(img):
-    email_lst = ["dibyachitwan@gmail.com", "adhikari.dipin2@gmail.com", "dipin.adk@gmail.com"]
+    email_lst = ["dipin.adk@gmail.com", "dipin.adk@gmail.com", "dibyachitwan@gmail.com", "adhikari.dipin2@gmail.com", "dipin.adk@gmail.com"]
     imgs = cv2.resize(img, (0, 0), None, 0.25, 0.25)
     imgs = cv2.cvtColor(imgs, cv2.COLOR_BGR2RGB)
 
     faces_location = face_recognition.face_locations(imgs)
     encode_faces = face_recognition.face_encodings(imgs, faces_location)
 
-    for encode_face in faces_location, encode_faces:
+    for encode_face in encode_faces:
         results = face_recognition.compare_faces(encode_lst, encode_face)
         distance = face_recognition.face_distance(encode_lst, encode_face)
 
@@ -108,8 +117,13 @@ while True:
                 org = (bbox[0], bbox[1] - 10)
             condition = condition + '-' + str(int(max_number)) + '%'
 
+            c_time = time.time()
+            fps = 1 / (c_time - p_time)
+            p_time = c_time
+
             img = cv2.rectangle(img, bbox, color, 3)
             cv2.putText(img, condition, org, cv2.FONT_HERSHEY_PLAIN, 2, color, 2)
+            cv2.putText(img, f'FPS: {int(fps)}', (20, 70), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
     
     cv2.imshow('Image', img)
     bbox = []
